@@ -4,7 +4,8 @@ from uuid import uuid4
 import pytest
 
 from arangodantic import GraphNotFoundError, ModelNotFoundError, UniqueConstraintError
-from arangodantic.tests.conftest import (
+
+from .conftest import (
     Person,
     Relation,
     RelationGraph,

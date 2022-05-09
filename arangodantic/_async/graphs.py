@@ -8,36 +8,40 @@ from aioarangodb import GraphDeleteError
 from aioarangodb.database import StandardDatabase
 from pydantic import Field
 
-from arangodantic import GraphNotFoundError, ModelNotFoundError, UniqueConstraintError
+from arangodantic._async.models import AsyncDocumentModel, AsyncEdgeModel, AsyncModel
 from arangodantic.arangdb_error_codes import (
     ERROR_ARANGO_DOCUMENT_NOT_FOUND,
     ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED,
     ERROR_GRAPH_NOT_FOUND,
 )
 from arangodantic.configurations import CONF
-from arangodantic.models import DocumentModel, EdgeModel, Model
+from arangodantic.exceptions import (
+    GraphNotFoundError,
+    ModelNotFoundError,
+    UniqueConstraintError,
+)
 
 
-class EdgeDefinition(pydantic.BaseModel):
-    edge_collection: Type[EdgeModel]
-    from_vertex_collections: List[Type[DocumentModel]]
-    to_vertex_collections: List[Type[DocumentModel]]
+class AsyncEdgeDefinition(pydantic.BaseModel):
+    edge_collection: Type[AsyncEdgeModel]
+    from_vertex_collections: List[Type[AsyncDocumentModel]]
+    to_vertex_collections: List[Type[AsyncDocumentModel]]
 
 
-class ArangodanticGraphConfig(pydantic.BaseModel):
+class AsyncArangodanticGraphConfig(pydantic.BaseModel):
     graph_name: Optional[str] = Field(
         None, description="Override the name of the graph to use"
     )
-    edge_definitions: Optional[List[EdgeDefinition]] = None
-    orphan_collections: Optional[List[Model]] = None
+    edge_definitions: Optional[List[AsyncEdgeDefinition]] = None
+    orphan_collections: Optional[List[AsyncModel]] = None
 
 
-class Graph(ABC):
+class AsyncGraph(ABC):
     @classmethod
     @lru_cache()
     def get_graph_name(cls) -> str:
-        cls_config: ArangodanticGraphConfig = getattr(
-            cls, "ArangodanticConfig", ArangodanticGraphConfig()
+        cls_config: AsyncArangodanticGraphConfig = getattr(
+            cls, "ArangodanticConfig", AsyncArangodanticGraphConfig()
         )
         if getattr(cls_config, "graph_name", None):
             graph = cls_config.graph_name
@@ -54,7 +58,7 @@ class Graph(ABC):
         return cls.get_db().graph(cls.get_graph_name())
 
     @classmethod
-    async def save(cls, model: Union[DocumentModel, EdgeModel], **kwargs):
+    async def save(cls, model: Union[AsyncDocumentModel, AsyncEdgeModel], **kwargs):
         """
         Save the model through the graph; either creates a new one or updates/replaces
         an existing document.
@@ -85,7 +89,7 @@ class Graph(ABC):
 
             try:
                 collection_name = model.get_collection_name()
-                if isinstance(model, EdgeModel):
+                if isinstance(model, AsyncEdgeModel):
                     response = await graph.insert_edge(
                         collection=collection_name, edge=data
                     )
@@ -104,7 +108,7 @@ class Graph(ABC):
             await model.before_save(new=False, **kwargs)
             data = model.get_arangodb_data()
             try:
-                if isinstance(model, EdgeModel):
+                if isinstance(model, AsyncEdgeModel):
                     response = await graph.replace_edge(edge=data)
                 else:
                     response = await graph.replace_vertex(vertex=data)
@@ -119,7 +123,9 @@ class Graph(ABC):
         model.rev_ = response["_rev"]
 
     @classmethod
-    async def delete_vertex(cls, document: DocumentModel, ignore_missing=False) -> bool:
+    async def delete_vertex(
+        cls, document: AsyncDocumentModel, ignore_missing=False
+    ) -> bool:
         """
         Delete a vertex from the graph. This will also ensure all edges to/from the
         vertex are deleted.
@@ -147,7 +153,7 @@ class Graph(ABC):
         return result
 
     @classmethod
-    async def delete_edge(cls, edge: EdgeModel, ignore_missing=False) -> bool:
+    async def delete_edge(cls, edge: AsyncEdgeModel, ignore_missing=False) -> bool:
         """
         Delete an edge from the graph.
 
@@ -174,7 +180,7 @@ class Graph(ABC):
 
     @classmethod
     async def delete(
-        cls, model: Union[DocumentModel, EdgeModel], ignore_missing=False
+        cls, model: Union[AsyncDocumentModel, AsyncEdgeModel], ignore_missing=False
     ) -> bool:
         """
         Delete a model (edge or vertex) from the graph. This will also ensure all edges
@@ -187,7 +193,7 @@ class Graph(ABC):
         :return: True if model was deleted successfully, False if model was
         not found and **ignore_missing** was set to True.
         """
-        if isinstance(model, EdgeModel):
+        if isinstance(model, AsyncEdgeModel):
             return await cls.delete_edge(edge=model, ignore_missing=ignore_missing)
         else:
             return await cls.delete_vertex(
@@ -199,8 +205,8 @@ class Graph(ABC):
         """
         Ensure the graph exists and create it if needed.
         """
-        cls_config: ArangodanticGraphConfig = getattr(
-            cls, "ArangodanticConfig", ArangodanticGraphConfig()
+        cls_config: AsyncArangodanticGraphConfig = getattr(
+            cls, "ArangodanticConfig", AsyncArangodanticGraphConfig()
         )
 
         def get_edge_definitions() -> List[Dict[str, Union[str, List[str]]]]:

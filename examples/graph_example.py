@@ -8,8 +8,8 @@ from shylock import ShylockAioArangoDBBackend
 from shylock import configure as configure_shylock
 
 from arangodantic import (
+    AsyncEdgeDefinition,
     DocumentModel,
-    EdgeDefinition,
     EdgeModel,
     Graph,
     ModelNotFoundError,
@@ -40,7 +40,7 @@ class SecondaryRelation(EdgeModel):
 class RelationGraph(Graph):
     class ArangodanticConfig:
         edge_definitions = [
-            EdgeDefinition(
+            AsyncEdgeDefinition(
                 edge_collection=Relation,
                 from_vertex_collections=[Person],
                 to_vertex_collections=[Person],

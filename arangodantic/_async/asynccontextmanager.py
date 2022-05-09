@@ -49,12 +49,12 @@ class AbstractAsyncContextManager(abc.ABC):
 
     """An abstract base class for asynchronous context managers."""
 
-    async def __aenter__(self):
+    def __aenter__(self):
         """Return `self` upon entering the runtime context."""
         return self
 
     @abc.abstractmethod
-    async def __aexit__(self, exc_type, exc_value, traceback):
+    def __aexit__(self, exc_type, exc_value, traceback):
         """Raise any exception triggered within the runtime context."""
         return None
 
@@ -178,13 +178,13 @@ class _AsyncGeneratorContextManager(
 ):
     """Helper for @asynccontextmanager."""
 
-    async def __aenter__(self):
+    def __aenter__(self):
         try:
             return await self.gen.__anext__()
         except StopAsyncIteration:
             raise RuntimeError("generator didn't yield") from None
 
-    async def __aexit__(self, typ, value, traceback):
+    def __aexit__(self, typ, value, traceback):
         if typ is None:
             try:
                 await self.gen.__anext__()

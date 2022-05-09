@@ -6,7 +6,7 @@ from aioarangodb.cursor import Cursor
 from arangodantic.exceptions import CursorError, CursorNotFoundError
 
 
-class ArangodanticCursor:
+class AsyncArangodanticCursor:
     """
     Wrapper for the aioarangodb.cursor.Cursor that will give back instances of the
     defined class rather than dictionaries.
@@ -18,9 +18,9 @@ class ArangodanticCursor:
     ]
 
     def __init__(self, cls, cursor: Cursor):
-        from arangodantic.models import Model
+        from .models import AsyncModel
 
-        self.cls: Type[Model] = cls
+        self.cls: Type[AsyncModel] = cls
         self.cursor: Cursor = cursor
 
     def __aiter__(self):

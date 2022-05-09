@@ -1,6 +1,6 @@
 import pytest
 
-from arangodantic.tests.conftest import Identity
+from .conftest import Identity
 
 
 @pytest.mark.asyncio

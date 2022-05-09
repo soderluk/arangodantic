@@ -13,8 +13,9 @@ from arangodantic import (
     MultipleModelsFoundError,
     UniqueConstraintError,
 )
-from arangodantic.tests.conftest import ExtendedIdentity, Identity, Link, SubModel
 from arangodantic.utils import SortTypes
+
+from .conftest import ExtendedIdentity, Identity, Link, SubModel
 
 
 @pytest.mark.asyncio

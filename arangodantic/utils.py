@@ -32,7 +32,8 @@ def build_filters(
         }
     )
     """
-    from arangodantic.models import Model
+    from arangodantic._async.models import AsyncModel
+    from arangodantic._sync.models import Model
 
     filter_list = []
     bind_vars = {}
@@ -69,7 +70,7 @@ def build_filters(
 
                 # For right side of comparison
                 value_bind_var = f"{bind_var_prefix}_{comparison_operators[operator]}"
-                if isinstance(value, Model):
+                if isinstance(value, Model) or isinstance(value, AsyncModel):
                     # Make it possible to compare a field to a model; handy for
                     # example to match the "_from" or "_to" of an edge to a model.
                     value = value.id_

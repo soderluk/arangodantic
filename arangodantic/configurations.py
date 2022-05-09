@@ -1,8 +1,12 @@
 from typing import Callable, Optional
 
-from aioarangodb.database import StandardDatabase
 from inflection import pluralize, underscore
 from pydantic import BaseModel
+
+try:
+    from aioarangodb.database import StandardDatabase
+except ImportError:
+    from arango.database import StandardDatabase
 
 
 class Configuration(BaseModel):
@@ -56,7 +60,7 @@ def configure(
 ) -> None:
     """Configures the DB.
 
-    :param db: The aioarangodb StandardDatabase.
+    :param db: The StandardDatabase, either from aioarangodb or python-arango.
     :param prefix: A prefix to use for collection names.
     :param key_gen: A function that generates new "_key"s.
     :param collection_generator: A function that converts the class to a collection

@@ -9,13 +9,13 @@ from aioarangodb.collection import StandardCollection
 from aioarangodb.database import StandardDatabase
 from pydantic import Field
 
+from arangodantic._async.cursor import AsyncArangodanticCursor
 from arangodantic.arangdb_error_codes import (
     ERROR_ARANGO_DATA_SOURCE_NOT_FOUND,
     ERROR_ARANGO_DOCUMENT_NOT_FOUND,
     ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED,
 )
 from arangodantic.configurations import CONF
-from arangodantic.cursor import ArangodanticCursor
 from arangodantic.exceptions import (
     ConfigError,
     DataSourceNotFound,
@@ -34,9 +34,9 @@ from arangodantic.utils import (
 try:
     from contextlib import asynccontextmanager  # type: ignore
 except ImportError:
-    from arangodantic.asynccontextmanager import asynccontextmanager
+    from arangodantic._async.asynccontextmanager import asynccontextmanager
 
-TModel = TypeVar("TModel", bound="Model")
+AsyncTModel = TypeVar("AsyncTModel", bound="AsyncModel")
 
 
 class ArangodanticCollectionConfig(pydantic.BaseModel):
@@ -45,7 +45,7 @@ class ArangodanticCollectionConfig(pydantic.BaseModel):
     )
 
 
-class Model(pydantic.BaseModel, ABC):
+class AsyncModel(pydantic.BaseModel, ABC):
     """
     Base model class.
 
@@ -85,7 +85,7 @@ class Model(pydantic.BaseModel, ABC):
         return CONF.lock(lock_name)
 
     @classmethod
-    async def load(cls: Type[TModel], key: str) -> TModel:
+    async def load(cls: Type[AsyncTModel], key: str) -> AsyncTModel:
         """
         Get a model based on the ArangoDB "_key".
 
@@ -306,7 +306,7 @@ class Model(pydantic.BaseModel, ABC):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         sort: SortTypes = None,
-    ) -> ArangodanticCursor:
+    ) -> AsyncArangodanticCursor:
         """
         Find instances of the class using an optional filter and limit.
 
@@ -370,7 +370,7 @@ class Model(pydantic.BaseModel, ABC):
             bind_vars=bind_vars,
             full_count=full_count,
         )
-        return ArangodanticCursor(cls, cursor)
+        return AsyncArangodanticCursor(cls, cursor)
 
     @classmethod
     async def find_one(
@@ -407,25 +407,25 @@ class Model(pydantic.BaseModel, ABC):
             raise ModelNotFoundError(f"No '{cls.__name__}' matched given filters")
 
 
-class DocumentModel(Model, ABC):
+class AsyncDocumentModel(AsyncModel, ABC):
     """
     Base document model class.
     """
 
 
-class EdgeModel(Model, ABC):
+class AsyncEdgeModel(AsyncModel, ABC):
     """
     Base edge model class.
     """
 
-    from_: Union[str, DocumentModel] = Field(alias="_from")
-    to_: Union[str, DocumentModel] = Field(alias="_to")
+    from_: Union[str, AsyncDocumentModel] = Field(alias="_from")
+    to_: Union[str, AsyncDocumentModel] = Field(alias="_to")
 
     @property
     def from_key_(self) -> Optional[str]:
         if self.from_ is None:
             return None
-        elif isinstance(self.from_, DocumentModel):
+        elif isinstance(self.from_, AsyncDocumentModel):
             return self.from_.key_
         else:
             return self.from_.rsplit("/", maxsplit=1)[1]
@@ -434,7 +434,7 @@ class EdgeModel(Model, ABC):
     def to_key_(self) -> Optional[str]:
         if self.to_ is None:
             return None
-        elif isinstance(self.to_, DocumentModel):
+        elif isinstance(self.to_, AsyncDocumentModel):
             return self.to_.key_
         else:
             return self.to_.rsplit("/", maxsplit=1)[1]
@@ -446,12 +446,12 @@ class EdgeModel(Model, ABC):
         """
         data = self.dict(by_alias=True, exclude={"from_", "to_"})
         data["_id"] = self.id_
-        if isinstance(self.from_, DocumentModel):
+        if isinstance(self.from_, AsyncDocumentModel):
             data["_from"] = self.from_.id_
         else:
             data["_from"] = self.from_
 
-        if isinstance(self.to_, DocumentModel):
+        if isinstance(self.to_, AsyncDocumentModel):
             data["_to"] = self.to_.id_
         else:
             data["_to"] = self.to_
@@ -463,4 +463,6 @@ class EdgeModel(Model, ABC):
         """
         Ensure the collection exists and create it if needed.
         """
-        return await super(EdgeModel, cls).ensure_collection(edge=True, *args, **kwargs)
+        return await super(AsyncEdgeModel, cls).ensure_collection(
+            edge=True, *args, **kwargs
+        )

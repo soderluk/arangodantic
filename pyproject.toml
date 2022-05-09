@@ -16,9 +16,11 @@ pydantic = "^1.8.2"
 aioarangodb = "^0.1.2"
 inflection = "^0.5.1"
 shylock = {extras = ["aioarangodb"], version = "^1.1.1", optional = true}
+python-arango = {version = "^7.3.4", optional = true}
 
 [tool.poetry.extras]
 shylock = ["shylock"]
+python-arango = ["python-arango"]
 
 [tool.poetry.dev-dependencies]
 isort = "^5.5.2"
